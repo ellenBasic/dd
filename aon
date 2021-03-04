@@ -1,16 +1,17 @@
 /**
- *Submitted for verification at Etherscan.io on 2021-03-03
-*/
-
-/**
- *Submitted for verification at Etherscan.io on 2020-04-27
+ *Submitted for verification at Etherscan.io on 2020-12-31
 */
 
 pragma solidity ^0.5.0;
 
+/**
+ * @title SafeMath
+ * @dev Math operations with safety checks that revert on error
+ */
 library SafeMath {
+
     /**
-    * @dev Multiplies two unsigned integers, reverts on overflow.
+    * @dev Multiplies two numbers, reverts on overflow.
     */
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
@@ -19,47 +20,46 @@ library SafeMath {
         if (a == 0) {
             return 0;
         }
-
+        
         uint256 c = a * b;
         require(c / a == b);
-
+        
         return c;
     }
 
     /**
-    * @dev Integer division of two unsigned integers truncating the quotient, reverts on division by zero.
+    * @dev Integer division of two numbers truncating the quotient, reverts on division by zero.
     */
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        // Solidity only automatically asserts when dividing by 0
-        require(b > 0);
-        uint256 c = a / b;
-        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-
-        return c;
+    require(b > 0); // Solidity only automatically asserts when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+    
+    return c;
     }
-
+    
     /**
-    * @dev Subtracts two unsigned integers, reverts on overflow (i.e. if subtrahend is greater than minuend).
+    * @dev Subtracts two numbers, reverts on overflow (i.e. if subtrahend is greater than minuend).
     */
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b <= a);
         uint256 c = a - b;
-
+    
         return c;
     }
-
+    
     /**
-    * @dev Adds two unsigned integers, reverts on overflow.
+    * @dev Adds two numbers, reverts on overflow.
     */
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
         require(c >= a);
-
+    
         return c;
     }
-
+    
     /**
-    * @dev Divides two unsigned integers and returns the remainder (unsigned integer modulo),
+    * @dev Divides two numbers and returns the remainder (unsigned integer modulo),
     * reverts when dividing by zero.
     */
     function mod(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -73,30 +73,16 @@ library Roles {
         mapping (address => bool) bearer;
     }
 
-    /**
-     * @dev give an account access to this role
-     */
     function add(Role storage role, address account) internal {
         require(account != address(0));
         require(!has(role, account));
-
         role.bearer[account] = true;
     }
-
-    /**
-     * @dev remove an account's access to this role
-     */
     function remove(Role storage role, address account) internal {
         require(account != address(0));
         require(has(role, account));
-
         role.bearer[account] = false;
     }
-
-    /**
-     * @dev check if an account has this role
-     * @return bool
-     */
     function has(Role storage role, address account) internal view returns (bool) {
         require(account != address(0));
         return role.bearer[account];
@@ -105,25 +91,18 @@ library Roles {
 
 contract Ownable {
     address public owner;
-    address public newOwner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     constructor() public {
         owner = msg.sender;
-        newOwner = address(0);
     }
 
     modifier onlyOwner() {
         require(msg.sender == owner);
         _;
     }
-    modifier onlyNewOwner() {
-        require(msg.sender != address(0));
-        require(msg.sender == newOwner);
-        _;
-    }
-    
+
     function isOwner(address account) public view returns (bool) {
         if( account == owner ){
             return true;
@@ -132,64 +111,54 @@ contract Ownable {
             return false;
         }
     }
-
-    function transferOwnership(address _newOwner) public onlyOwner {
-        require(_newOwner != address(0));
-        newOwner = _newOwner;
-    }
-
-    function acceptOwnership() public onlyNewOwner returns(bool) {
-        emit OwnershipTransferred(owner, newOwner);        
+    function transferOwnership(address newOwner) public onlyOwner {
+        require(newOwner != address(0));
+        emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
-        newOwner = address(0);
     }
 }
 
-contract PauserRole is Ownable{
+contract AdminRole is Ownable{
     using Roles for Roles.Role;
 
-    event PauserAdded(address indexed account);
-    event PauserRemoved(address indexed account);
+    event AdminAdded(address indexed account);
+    event AdminRemoved(address indexed account);
 
-    Roles.Role private _pausers;
+    Roles.Role private _admin_list;
 
     constructor () internal {
-        _addPauser(msg.sender);
+        _addAdmin(msg.sender);
     }
 
-    modifier onlyPauser() {
-        require(isPauser(msg.sender)|| isOwner(msg.sender));
+    modifier onlyAdmin() {
+        require(isAdmin(msg.sender)|| isOwner(msg.sender));
         _;
     }
 
-    function isPauser(address account) public view returns (bool) {
-        return _pausers.has(account);
+    function isAdmin(address account) public view returns (bool) {
+        return _admin_list.has(account);
     }
-
-    function addPauser(address account) public onlyPauser {
-        _addPauser(account);
+    function addAdmin(address account) public onlyAdmin {
+        _addAdmin(account);
     }
-    
-    function removePauser(address account) public onlyOwner {
-        _removePauser(account);
+    function removeAdmin(address account) public onlyOwner {
+        _removeAdmin(account);
     }
-
-    function renouncePauser() public {
-        _removePauser(msg.sender);
+    function renounceAdmin() public {
+        _removeAdmin(msg.sender);
     }
-
-    function _addPauser(address account) internal {
-        _pausers.add(account);
-        emit PauserAdded(account);
+    function _addAdmin(address account) internal {
+        _admin_list.add(account);
+        emit AdminAdded(account);
     }
-
-    function _removePauser(address account) internal {
-        _pausers.remove(account);
-        emit PauserRemoved(account);
+    function _removeAdmin(address account) internal {
+        _admin_list.remove(account);
+        emit AdminRemoved(account);
     }
 }
 
-contract Pausable is PauserRole {
+
+contract Pausable is AdminRole {
     event Paused(address account);
     event Unpaused(address account);
 
@@ -225,7 +194,7 @@ contract Pausable is PauserRole {
     /**
      * @dev called by the owner to pause, triggers stopped state
      */
-    function pause() public onlyPauser whenNotPaused {
+    function pause() public onlyAdmin whenNotPaused {
         _paused = true;
         emit Paused(msg.sender);
     }
@@ -233,7 +202,7 @@ contract Pausable is PauserRole {
     /**
      * @dev called by the owner to unpause, returns to normal state
      */
-    function unpause() public onlyPauser whenPaused {
+    function unpause() public onlyAdmin whenPaused {
         _paused = false;
         emit Unpaused(msg.sender);
     }
@@ -241,19 +210,13 @@ contract Pausable is PauserRole {
 
 interface IERC20 {
     function transfer(address to, uint256 value) external returns (bool);
-
     function approve(address spender, uint256 value) external returns (bool);
-
     function transferFrom(address from, address to, uint256 value) external returns (bool);
-
     function totalSupply() external view returns (uint256);
-
     function balanceOf(address who) external view returns (uint256);
-
     function allowance(address owner, address spender) external view returns (uint256);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
-
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
@@ -261,7 +224,6 @@ contract ERC20 is IERC20 {
     using SafeMath for uint256;
 
     mapping (address => uint256) internal _balances;
-
     mapping (address => mapping (address => uint256)) internal _allowed;
 
     uint256 private _totalSupply;
@@ -428,7 +390,24 @@ contract ERC20 is IERC20 {
     }
 }
 
+contract ERC20Burnable is ERC20 {
+    /**
+     * @dev Burns a specific amount of tokens.
+     * @param value The amount of token to be burned.
+     */
+    function burn(uint256 value) public {
+        _burn(msg.sender, value);
+    }
 
+    /**
+     * @dev Burns a specific amount of tokens from the target address and decrements allowance
+     * @param from address The address which you want to send tokens from
+     * @param value uint256 The amount of token to be burned
+     */
+    function burnFrom(address from, uint256 value) public {
+        _burnFrom(from, value);
+    }
+}
 
 contract ERC20Pausable is ERC20, Pausable {
     function transfer(address to, uint256 value) public whenNotPaused returns (bool) {
@@ -438,24 +417,18 @@ contract ERC20Pausable is ERC20, Pausable {
     function transferFrom(address from, address to, uint256 value) public whenNotPaused returns (bool) {
         return super.transferFrom(from, to, value);
     }
-    
-    /*
-     * approve/increaseApprove/decreaseApprove can be set when Paused state
-     */
-     
-    /*
-     * function approve(address spender, uint256 value) public whenNotPaused returns (bool) {
-     *     return super.approve(spender, value);
-     * }
-     *
-     * function increaseAllowance(address spender, uint addedValue) public whenNotPaused returns (bool success) {
-     *     return super.increaseAllowance(spender, addedValue);
-     * }
-     *
-     * function decreaseAllowance(address spender, uint subtractedValue) public whenNotPaused returns (bool success) {
-     *     return super.decreaseAllowance(spender, subtractedValue);
-     * }
-     */
+
+    function approve(address spender, uint256 value) public whenNotPaused returns (bool) {
+        return super.approve(spender, value);
+    }
+
+    function increaseAllowance(address spender, uint addedValue) public whenNotPaused returns (bool success) {
+        return super.increaseAllowance(spender, addedValue);
+    }
+
+    function decreaseAllowance(address spender, uint subtractedValue) public whenNotPaused returns (bool success) {
+        return super.decreaseAllowance(spender, subtractedValue);
+    }
 }
 
 contract ERC20Detailed is IERC20 {
@@ -491,7 +464,7 @@ contract ERC20Detailed is IERC20 {
     }
 }
 
-contract AON is ERC20Detailed, ERC20Pausable {
+contract HCT is ERC20Detailed, ERC20Pausable, ERC20Burnable {
     
     struct LockInfo {
         uint256 _releaseTime;
@@ -513,9 +486,9 @@ contract AON is ERC20Detailed, ERC20Pausable {
         _;
     }
     
-    constructor() ERC20Detailed("AON Token", "AON",18) public  {
+    constructor() ERC20Detailed("Hancom Token", "HCT", 18) public  {
         
-        _mint(msg.sender, 1000000000 * (10 ** 18));
+        _mint(msg.sender, 500000000 * (10 ** 18));
     }
     
     function balanceOf(address owner) public view returns (uint256) {
@@ -544,35 +517,34 @@ contract AON is ERC20Detailed, ERC20Pausable {
         return super.transferFrom(from, to, value);
     }
     
-    function freezeAccount(address holder) public onlyPauser returns (bool) {
+    function freezeAccount(address holder) public onlyAdmin returns (bool) {
         require(!frozenAccount[holder]);
         frozenAccount[holder] = true;
         emit Freeze(holder);
         return true;
     }
 
-    function unfreezeAccount(address holder) public onlyPauser returns (bool) {
+    function unfreezeAccount(address holder) public onlyAdmin returns (bool) {
         require(frozenAccount[holder]);
         frozenAccount[holder] = false;
         emit Unfreeze(holder);
         return true;
     }
     
-    function lock(address holder, uint256 value, uint256 releaseTime) public onlyPauser returns (bool) {
-        require(_balances[holder] >= value,"There is not enough balances of holder.");
+    function lock(address holder, uint256 value, uint256 releaseTime) public onlyAdmin returns (bool) {
+        require(_balances[holder] >= value,"There is not enough balance of holder.");
         _lock(holder,value,releaseTime);
-        
         
         return true;
     }
     
-    function transferWithLock(address holder, uint256 value, uint256 releaseTime) public onlyPauser returns (bool) {
+    function transferWithLock(address holder, uint256 value, uint256 releaseTime) public onlyAdmin returns (bool) {
         _transfer(msg.sender, holder, value);
         _lock(holder,value,releaseTime);
         return true;
     }
     
-    function unlock(address holder, uint256 idx) public onlyPauser returns (bool) {
+    function unlock(address holder, uint256 idx) public onlyAdmin returns (bool) {
         require( timelockList[holder].length > idx, "There is not lock info.");
         _unlock(holder,idx);
         return true;
@@ -638,12 +610,51 @@ contract AON is ERC20Detailed, ERC20Pausable {
         address impl = implementation;
         require(impl != address(0));
         assembly {
+            /*
+                0x40 is the "free memory slot", meaning a pointer to next slot of empty memory. mload(0x40)
+                loads the data in the free memory slot, so `ptr` is a pointer to the next slot of empty
+                memory. It's needed because we're going to write the return data of delegatecall to the
+                free memory slot.
+            */
             let ptr := mload(0x40)
+            /*
+                `calldatacopy` is copy calldatasize bytes from calldata
+                First argument is the destination to which data is copied(ptr)
+                Second argument specifies the start position of the copied data.
+                    Since calldata is sort of its own unique location in memory,
+                    0 doesn't refer to 0 in memory or 0 in storage - it just refers to the zeroth byte of calldata.
+                    That's always going to be the zeroth byte of the function selector.
+                Third argument, calldatasize, specifies how much data will be copied.
+                    calldata is naturally calldatasize bytes long (same thing as msg.data.length)
+            */
             calldatacopy(ptr, 0, calldatasize)
+            /*
+                delegatecall params explained:
+                gas: the amount of gas to provide for the call. `gas` is an Opcode that gives
+                    us the amount of gas still available to execution
+                _impl: address of the contract to delegate to
+                ptr: to pass copied data
+                calldatasize: loads the size of `bytes memory data`, same as msg.data.length
+                0, 0: These are for the `out` and `outsize` params. Because the output could be dynamic,
+                        these are set to 0, 0 so the output data will not be written to memory. The output
+                        data will be read using `returndatasize` and `returdatacopy` instead.
+                result: This will be 0 if the call fails and 1 if it succeeds
+            */
             let result := delegatecall(gas, impl, ptr, calldatasize, 0, 0)
             let size := returndatasize
+            /*
+                `returndatacopy` is an Opcode that copies the last return data to a slot. `ptr` is the
+                    slot it will copy to, 0 means copy from the beginning of the return data, and size is
+                    the amount of data to copy.
+                `returndatasize` is an Opcode that gives us the size of the last return data. In this case, that is the size of the data returned from delegatecall
+            */
             returndatacopy(ptr, 0, size)
             
+            /*
+                if `result` is 0, revert.
+                if `result` is 1, return `size` amount of data from `ptr`. This is the data that was
+                copied to `ptr` from the delegatecall return data
+            */
             switch result
             case 0 { revert(ptr, size) }
             default { return(ptr, size) }
